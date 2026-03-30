@@ -1,75 +1,84 @@
-Compreendido. Aqui está o conteúdo estruturado em formato de texto simples (.txt) para o seu README principal. Você pode copiar este bloco, colar em um arquivo de texto e salvar como README.txt na raiz do seu projeto.
+================================================================================
+YOOGSAUDE - SISTEMA INTEGRADO DE GESTAO DE ATENDIMENTO
+VISAO GERAL
 
-SISTEMA YOOGSAUDE - GERENCIAMENTO DE ATENDIMENTO
-ESTRUTURA DO PROJETO
-Este ecossistema foi desenvolvido com uma arquitetura desacoplada em duas frentes principais:
+O YoogSaude e uma plataforma Full-Stack projetada para a modernizacao do fluxo
+de atendimento hospitalar. O sistema gerencia o ciclo de vida completo de um
+paciente na fila de espera, desde o registro inicial ate a finalizacao do
+procedimento, garantindo integridade de dados e alta performance.
 
-[./mini-crm-backend]
+ARQUITETURA DO PROJETO (ESTRUTURA DE PASTAS)
 
-API REST desenvolvida em Node.js e TypeScript.
+O ecossistema e dividido em dois modulos independentes:
 
-Responsável pela persistência e máquina de estados dos atendimentos.
+/mini-crm-backend  -> Servidor de API REST e Regras de Negocio.
+/mini-crm-frontend -> Interface do Usuario (SPA) e Logica de Apresentacao.
 
-Validação de contratos de dados via Zod.
-
-[./mini-crm-frontend]
-
-Interface SPA (Single Page Application) em React 18 e Vite.
-
-Focada em alta performance, acessibilidade e design responsivo (Tailwind CSS).
-
-Cobertura de testes unitários e integração com Vitest.
-
-ESPECIFICACOES TECNICAS SENIOR
-CONSISTENCIA DE DADOS (CASE SENSITIVITY)
-O sistema utiliza um contrato rigoroso de estados em MAIUSCULO (WAITING, IN_PROGRESS, FINISHED).
-Isso garante a integridade entre o Banco de Dados, as regras de negocio do Backend e a
-renderizacao de componentes no Frontend.
-
-ACESSIBILIDADE E TESTABILIDADE
-Todos os componentes de formulario utilizam relacoes explicitas de ID e htmlFor.
-Botoes de acao possuem aria-labels para permitir que leitores de tela e a suite
-de testes (React Testing Library) identifiquem as funcoes de exclusao e edicao.
-
-PROGRAMACAO DEFENSIVA
-Componentes de UI, como o StatusBadge, implementam logica de "fallback". Caso a API
-retorne um valor inesperado, o sistema nao sofre "crash", exibindo um estado
-padrao de seguranca.
-
-COMO EXECUTAR O PROJETO (PASSO A PASSO)
-REQUISITOS:
-
-Node.js instalado.
-
-Gerenciador de pacotes npm ou yarn.
+STACK TECNOLOGICA (ESPECIFICACOES SENIOR)
 
 BACKEND:
 
-Navegue ate a pasta /mini-crm-backend.
+Node.js & TypeScript (Seguranca de tipos no lado do servidor).
 
-Execute: npm install
+Zod (Validacao de contratos de dados e esquemas de entrada/saida).
 
-Execute: npm run dev
+Arquitetura baseada em Controller/Service para separacao de responsabilidades.
 
 FRONTEND:
 
-Navegue ate a pasta /mini-crm-frontend.
+React 18 & Vite (Tooling de alta performance).
 
-Execute: npm install
+Tailwind CSS & Shadcn/UI (Design System focado em acessibilidade/a11y).
 
-Execute: npm run dev
+React Hook Form (Gestao performatica de estados de formulario).
 
-TESTES:
+Vitest & React Testing Library (QA via testes unitarios e de integracao).
 
-Dentro da pasta /mini-crm-frontend.
+DECISOES TECNICAS E BOAS PRATICAS
 
-Execute: npm test
+NORMALIZACAO DE ESTADOS (CASE SENSITIVE):
+O sistema utiliza um contrato estrito de strings em MAIUSCULO para os status
+de atendimento (WAITING, IN_PROGRESS, FINISHED). Isso evita conflitos entre
+o Backend (Zod/Banco de Dados) e o Frontend (StatusBadge/Actions).
 
-FLUXO DE ESTADOS (BUSINESS LOGIC)
-O fluxo de atendimento obedece a seguinte sequencia:
+PROGRAMACAO DEFENSIVA:
+Os componentes de UI possuem logica de "fallback". O StatusBadge, por exemplo,
+e capaz de processar estados inesperados sem interromper a execucao da
+aplicacao, garantindo um ambiente "crash-free".
 
-WAITING (Aguardando) -> Disponibiliza acao "ATENDER".
+ACESSIBILIDADE (a11y):
+Todos os controles de formulario e botoes possuem atributos ARIA (aria-label)
+e IDs vinculados, garantindo que o sistema seja operavel por tecnologias
+assistivas e facilmente identificado por scripts de automacao de testes.
 
-IN_PROGRESS (Em Aberto) -> Disponibiliza acao "FINALIZAR".
+COMO EXECUTAR O ECOSSISTEMA
 
-FINISHED (Finalizado) -> Status de leitura: "Atendido".
+A) BACKEND:
+
+Acesse a pasta: cd mini-crm-backend
+
+Instale: npm install
+
+Inicie: npm run dev
+
+B) FRONTEND:
+
+Acesse a pasta: cd mini-crm-frontend
+
+Instale: npm install
+
+Inicie: npm run dev
+
+C) TESTES:
+
+Na pasta do frontend, execute: npm test
+
+FLUXO DE ATENDIMENTO (BUSINESS LOGIC)
+
+AGUARDANDO (WAITING): O paciente esta na fila. Acao disponivel: "ATENDER".
+
+EM ABERTO (IN_PROGRESS): O paciente esta em consulta. Acao: "FINALIZAR".
+
+FINALIZADO (FINISHED): O ciclo esta concluido. Status: "Atendido".
+
+SOBRE O AUTOR
