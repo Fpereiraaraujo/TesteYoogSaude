@@ -1,67 +1,89 @@
-import { useAppointments } from './hooks/useAppointments';
-import { CheckCircle, PlayCircle, Clock, UserPlus } from 'lucide-react';
+import { useState } from "react";
+import { useAppointments } from "./hooks/useAppointments";
+import { StatusBadge } from "./components/StatusBadge";
+import { CreateAppointmentForm } from "./components/CreateAppointmentForm";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { UserPlus, Loader2 } from "lucide-react";
 
 export default function App() {
-  const { appointments, isLoading, updateStatus } = useAppointments();
+  const [open, setOpen] = useState(false);
+  const { appointments, isLoading, updateStatus, createAppointment, isCreating } = useAppointments();
 
-  if (isLoading) return <div className="flex h-screen items-center justify-center">Carregando CRM...</div>;
+  const handleCreate = async (data: any) => {
+    await createAppointment(data);
+    setOpen(false);
+  };
+
+  if (isLoading) return (
+    <div className="h-screen w-screen flex items-center justify-center"><Loader2 className="animate-spin text-blue-600" /></div>
+  );
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8 font-sans text-gray-900">
-      <header className="mb-8 flex items-center justify-between">
+    <div className="max-w-6xl mx-auto p-8 space-y-8">
+      <div className="flex justify-between items-end">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Mini CRM Saúde</h1>
-          <p className="text-gray-500">Gerencie os atendimentos do dia</p>
+          <h1 className="text-4xl font-extrabold tracking-tight">Dashboard CRM</h1>
+          <p className="text-muted-foreground text-lg">Sistema de triagem e fluxo YoogSaúde</p>
         </div>
-        <button className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 transition">
-          <UserPlus size={20} /> Novo Atendimento
-        </button>
-      </header>
 
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-        <table className="w-full text-left">
-          <thead className="bg-gray-50 border-b border-gray-200 text-sm font-semibold text-gray-600">
-            <tr>
-              <th className="px-6 py-4">Descrição</th>
-              <th className="px-6 py-4">Status</th>
-              <th className="px-6 py-4">Ações</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {appointments?.map((app) => (
-              <tr key={app.id} className="hover:bg-gray-50 transition">
-                <td className="px-6 py-4 font-medium">{app.description}</td>
-                <td className="px-6 py-4">
-                  <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium 
-                    ${app.status === 'WAITING' ? 'bg-yellow-100 text-yellow-700' : 
-                      app.status === 'IN_PROGRESS' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
-                    {app.status === 'WAITING' && <Clock size={14} />}
-                    {app.status === 'IN_PROGRESS' && <PlayCircle size={14} />}
-                    {app.status === 'FINISHED' && <CheckCircle size={14} />}
-                    {app.status}
-                  </span>
-                </td>
-                <td className="px-6 py-4 flex gap-2">
-                  {app.status === 'WAITING' && (
-                    <button 
-                      onClick={() => updateStatus({ id: app.id, status: 'IN_PROGRESS' })}
-                      className="text-xs font-bold text-blue-600 hover:underline">
-                      INICIAR
-                    </button>
-                  )}
-                  {app.status === 'IN_PROGRESS' && (
-                    <button 
-                      onClick={() => updateStatus({ id: app.id, status: 'FINISHED' })}
-                      className="text-xs font-bold text-green-600 hover:underline">
-                      FINALIZAR
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild>
+            <Button size="lg" className="bg-blue-600 hover:bg-blue-700 shadow-lg">
+              <UserPlus className="mr-2 h-5 w-5" /> Novo Paciente
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="text-2xl">Cadastrar Atendimento</DialogTitle>
+            </DialogHeader>
+            <CreateAppointmentForm onSubmit={handleCreate} isSubmitting={isCreating} />
+          </DialogContent>
+        </Dialog>
       </div>
+
+      <Card className="shadow-xl border-none">
+        <CardHeader className="bg-slate-50/50 border-b">
+          <CardTitle>Fila de Atendimentos</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="w-[400px] pl-6">Descrição do Caso</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right pr-6">Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {appointments?.map((app) => (
+                <TableRow key={app.id}>
+                  <TableCell className="font-medium pl-6 py-4">
+                    {app.description}
+                  </TableCell>
+                  <TableCell>
+                    <StatusBadge status={app.status} />
+                  </TableCell>
+                  <TableCell className="text-right pr-6 space-x-2">
+                    {app.status === 'WAITING' && (
+                      <Button variant="outline" size="sm" onClick={() => updateStatus({ id: app.id, status: 'IN_PROGRESS' })}>
+                        Iniciar
+                      </Button>
+                    )}
+                    {app.status === 'IN_PROGRESS' && (
+                      <Button variant="default" size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={() => updateStatus({ id: app.id, status: 'FINISHED' })}>
+                        Finalizar
+                      </Button>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   );
 }
