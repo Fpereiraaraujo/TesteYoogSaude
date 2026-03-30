@@ -11,4 +11,5 @@ export async function appRoutes(app: FastifyInstance) {
   app.post('/appointments', appointmentController.create);
   app.get('/appointments', appointmentController.list);
   app.patch('/appointments/:id/status', appointmentController.updateStatus);
+  app.delete('/appointments/:id', appointmentController.delete);
 }

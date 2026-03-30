@@ -5,7 +5,6 @@ import { PrismaPatientRepository } from '../../database/PrismaPatientRepository'
 import { CreateAppointment } from '../../../application/usecases/CreateAppointment';
 import { UpdateAppointmentStatus } from '../../../application/usecases/UpdateAppointmentStatus';
 import { AppointmentStatus } from '../../../domain/entities/Appointment';
-import { InvalidStatusTransitionError } from '../../../domain/exceptions/InvalidStatusTransitionError';
 
 export class AppointmentController {
   async create(request: FastifyRequest, reply: FastifyReply) {
@@ -16,7 +15,6 @@ export class AppointmentController {
       });
 
       const { patientId, description } = createBody.parse(request.body);
-
       const appointmentRepo = new PrismaAppointmentRepository();
       const patientRepo = new PrismaPatientRepository();
       const useCase = new CreateAppointment(appointmentRepo, patientRepo);
@@ -36,13 +34,8 @@ export class AppointmentController {
           phone: appointment.patient.phone
         } : null
       });
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return reply.status(400).send({ message: "Dados de entrada inválidos",  });
-      }
-      return reply.status(400).send({ 
-        message: error instanceof Error ? error.message : "Erro interno ao criar agendamento" 
-      });
+    } catch (error: any) {
+      return reply.status(400).send({ message: error.message });
     }
   }
 
@@ -51,12 +44,18 @@ export class AppointmentController {
       const listQuery = z.object({
         page: z.coerce.number().min(1).default(1),
         limit: z.coerce.number().min(1).max(50).default(10),
+        search: z.string().optional(),
+        status: z.string().optional(),
       });
 
-      const { page, limit } = listQuery.parse(request.query);
+      const { page, limit, search, status } = listQuery.parse(request.query);
       const repository = new PrismaAppointmentRepository();
       
-      const appointments = await repository.findAll(page, limit);
+      // SENIOR TIP: Se o status for 'all', passamos undefined para o repositório 
+      // ignorar o filtro de status e trazer todos.
+      const sanitizedStatus = status === 'all' ? undefined : status;
+      
+      const appointments = await repository.findAll(page, limit, search, sanitizedStatus);
       
       const response = appointments.map(app => ({
         id: app.id,
@@ -73,8 +72,8 @@ export class AppointmentController {
       }));
 
       return reply.status(200).send(response);
-    } catch (error) {
-      return reply.status(500).send({ message: "Erro ao listar agendamentos" });
+    } catch (error: any) {
+      return reply.status(400).send({ message: "Erro ao listar agendamentos" });
     }
   }
 
@@ -85,20 +84,35 @@ export class AppointmentController {
     try {
       const { id } = updateParams.parse(request.params);
       const { status } = updateBody.parse(request.body);
-
+      
       const repository = new PrismaAppointmentRepository();
       const useCase = new UpdateAppointmentStatus(repository);
       
       await useCase.execute(id, status);
       return reply.status(204).send();
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return reply.status(400).send({ message: "Parâmetros inválidos", });
-      }
-      if (error instanceof InvalidStatusTransitionError || error instanceof Error) {
-        return reply.status(400).send({ message: error.message });
-      }
-      return reply.status(500).send({ message: "Erro ao atualizar status" });
+    } catch (error: any) {
+      return reply.status(400).send({ message: error.message });
     }
   }
+
+
+async delete(request: FastifyRequest, reply: FastifyReply) {
+  const deleteParams = z.object({ id: z.string().uuid() });
+
+  try {
+    const { id } = deleteParams.parse(request.params);
+    const repository = new PrismaAppointmentRepository();
+    
+    // Verificamos se existe antes de deletar
+    const appointment = await repository.findById(id);
+    if (!appointment) {
+      return reply.status(404).send({ message: "Agendamento não encontrado" });
+    }
+
+    await repository.delete(id);
+    return reply.status(204).send();
+  } catch (error: any) {
+    return reply.status(400).send({ message: error.message });
+  }
+}
 }
