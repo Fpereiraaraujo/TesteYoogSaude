@@ -1,7 +1,20 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { api } from '../api';
-import type { Appointment, AppointmentStatus } from '../types';
+
+export type AppointmentStatus = 'WAITING' | 'IN_PROGRESS' | 'FINISHED';
+
+export interface Appointment {
+  id: string;
+  description: string;
+  status: AppointmentStatus;
+  name: string;  // Injetado pelo select
+  phone: string; // Injetado pelo select
+  patient?: {    // Estrutura original da API
+    name: string;
+    phone: string;
+  };
+}
 
 interface CreateAppointmentDTO {
   name: string;
@@ -12,12 +25,18 @@ interface CreateAppointmentDTO {
 export function useAppointments(page = 1) {
   const queryClient = useQueryClient();
 
-  const { data: appointments, isLoading } = useQuery<Appointment[]>({
+  const { data: appointments, isLoading } = useQuery<any, Error, Appointment[]>({
     queryKey: ['appointments', page],
     queryFn: async () => {
       const response = await api.get(`/appointments?page=${page}&limit=10`);
       return response.data;
     },
+    // Pattern Sênior: Transformação de dados na camada de Hook
+    select: (data) => data.map((app: any) => ({
+      ...app,
+      name: app.patient?.name || 'Paciente s/ nome',
+      phone: app.patient?.phone || ''
+    }))
   });
 
   const updateStatusMutation = useMutation({
@@ -26,11 +45,10 @@ export function useAppointments(page = 1) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
-      toast.success('Status atualizado com sucesso!');
+      toast.success('Status atualizado!');
     },
     onError: (err: any) => {
-      const message = err.response?.data?.message || 'Erro ao atualizar status';
-      toast.error(message);
+      toast.error(err.response?.data?.message || 'Erro ao atualizar status');
     }
   });
 
@@ -48,11 +66,10 @@ export function useAppointments(page = 1) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
-      toast.success('Agendamento realizado com sucesso!');
+      toast.success('Agendamento realizado!');
     },
     onError: (err: any) => {
-      const message = err.response?.data?.message || 'Erro ao criar agendamento';
-      toast.error(message);
+      toast.error(err.response?.data?.message || 'Erro ao criar agendamento');
     }
   });
 
