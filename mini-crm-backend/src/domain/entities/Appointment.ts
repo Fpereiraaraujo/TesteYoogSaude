@@ -6,6 +6,14 @@ export enum AppointmentStatus {
   FINISHED = 'FINISHED',
 }
 
+interface PatientData {
+  id: string;
+  name: string;
+  phone: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export class Appointment {
   constructor(
     public readonly id: string,
@@ -13,7 +21,8 @@ export class Appointment {
     public description: string,
     private _status: AppointmentStatus,
     public readonly createdAt: Date,
-    public updatedAt: Date
+    public updatedAt: Date,
+    public readonly patient?: PatientData 
   ) {}
 
   get status(): AppointmentStatus {

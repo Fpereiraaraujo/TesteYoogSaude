@@ -17,7 +17,10 @@ export class PrismaAppointmentRepository implements AppointmentRepository {
   }
 
   async findById(id: string): Promise<Appointment | null> {
-    const data = await prisma.appointment.findUnique({ where: { id } });
+    const data = await prisma.appointment.findUnique({ 
+      where: { id },
+      include: { patient: true } // Garante o carregamento do paciente
+    });
     
     if (!data) return null;
 
@@ -27,26 +30,31 @@ export class PrismaAppointmentRepository implements AppointmentRepository {
       data.description,
       data.status as AppointmentStatus,
       data.createdAt,
-      data.updatedAt
+      data.updatedAt,
+      data.patient 
     );
   }
 
- async findAll(page: number = 1, limit: number = 10): Promise<Appointment[]> {
-    const skip = (page - 1) * limit;
-    
-    const data = await prisma.appointment.findMany({
-      skip,
-      take: limit,
-      orderBy: { createdAt: 'desc' } // Sêniors sempre ordenam listas!
-    });
-    
-    return data.map(
-      (item) => new Appointment(
-          item.id, item.patientId, item.description, 
-          item.status as AppointmentStatus, item.createdAt, item.updatedAt
-        )
-    );
-  }
+  // PrismaAppointmentRepository.ts
+async findAll(page: number, limit: number): Promise<Appointment[]> {
+  const data = await prisma.appointment.findMany({
+    skip: (page - 1) * limit,
+    take: limit,
+    include: { patient: true }, 
+    orderBy: { createdAt: 'desc' }
+  });
+
+  return data.map(item => new Appointment(
+    item.id,
+    item.patientId,
+    item.description,
+    item.status as AppointmentStatus,
+    item.createdAt,
+    item.updatedAt,
+    item.patient 
+  ));
+}
+
   async update(appointment: Appointment): Promise<void> {
     await prisma.appointment.update({
       where: { id: appointment.id },
