@@ -23,18 +23,10 @@ const Dialog = ({
   )
 }
 
-/**
- * Interface para suportar o asChild
- */
-interface DialogTriggerProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  asChild?: boolean
-}
-
-const DialogTrigger = React.forwardRef<HTMLButtonElement, DialogTriggerProps>(
+const DialogTrigger = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HTMLButtonElement> & { asChild?: boolean }>(
   ({ className, asChild, ...props }, ref) => {
     const { onOpenChange } = React.useContext(DialogContext)
 
-    // Se asChild for true, clonamos o filho e injetamos o onClick
     if (asChild && React.isValidElement(props.children)) {
       return React.cloneElement(props.children as React.ReactElement<any>, {
         onClick: (e: React.MouseEvent) => {
@@ -73,7 +65,6 @@ const DialogContent = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTML
     
     return (
       <DialogPortal>
-        {/* Backdrop para fechar */}
         <div className="fixed inset-0" onClick={() => onOpenChange?.(false)} />
         
         <div
@@ -87,7 +78,7 @@ const DialogContent = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTML
           {children}
           <button
             onClick={() => onOpenChange?.(false)}
-            className="absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2"
+            className="absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-slate-950"
           >
             <X className="h-4 w-4" />
             <span className="sr-only">Fechar</span>
@@ -103,22 +94,52 @@ const DialogHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLD
   ({ className, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn("flex flex-col space-y-1.5 p-6 border-b border-slate-100", className)}
+      className={cn("flex flex-col space-y-1.5 p-6", className)}
       {...props}
     />
   )
 )
 DialogHeader.displayName = "DialogHeader"
 
+const DialogFooter = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  ({ className, ...props }, ref) => (
+    <div
+      ref={ref}
+      className={cn("flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 p-6", className)}
+      {...props}
+    />
+  )
+)
+DialogFooter.displayName = "DialogFooter"
+
 const DialogTitle = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLHeadingElement>>(
   ({ className, ...props }, ref) => (
     <h3
       ref={ref}
-      className={cn("text-2xl font-semibold leading-none tracking-tight", className)}
+      className={cn("text-lg font-semibold leading-none tracking-tight", className)}
       {...props}
     />
   )
 )
 DialogTitle.displayName = "DialogTitle"
 
-export { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle }
+const DialogDescription = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLParagraphElement>>(
+  ({ className, ...props }, ref) => (
+    <p
+      ref={ref}
+      className={cn("text-sm text-slate-500", className)}
+      {...props}
+    />
+  )
+)
+DialogDescription.displayName = "DialogDescription"
+
+export { 
+  Dialog, 
+  DialogTrigger, 
+  DialogContent, 
+  DialogHeader, 
+  DialogFooter, 
+  DialogTitle, 
+  DialogDescription 
+}

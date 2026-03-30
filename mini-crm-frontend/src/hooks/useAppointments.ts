@@ -8,36 +8,42 @@ export interface Appointment {
   id: string;
   description: string;
   status: AppointmentStatus;
-  name: string;  // Injetado pelo select
-  phone: string; // Injetado pelo select
-  patient?: {    // Estrutura original da API
+  name: string;  
+  phone: string; 
+  patient?: {    
     name: string;
     phone: string;
   };
 }
 
-interface CreateAppointmentDTO {
-  name: string;
-  phone: string;
-  description: string;
-}
-
-export function useAppointments(page = 1) {
+export function useAppointments(page = 1, search = '', status = '') {
   const queryClient = useQueryClient();
 
+
   const { data: appointments, isLoading } = useQuery<any, Error, Appointment[]>({
-    queryKey: ['appointments', page],
+    queryKey: ['appointments', page, search, status],
     queryFn: async () => {
-      const response = await api.get(`/appointments?page=${page}&limit=10`);
+      const response = await api.get('/appointments', {
+        params: {
+          page,
+          limit: 10,
+          search: search || undefined,
+          status: status || undefined,
+        }
+      });
       return response.data;
     },
-    // Pattern Sênior: Transformação de dados na camada de Hook
-    select: (data) => data.map((app: any) => ({
-      ...app,
-      name: app.patient?.name || 'Paciente s/ nome',
-      phone: app.patient?.phone || ''
-    }))
+    select: (data) => {
+      const list = Array.isArray(data) ? data : (data.data || []);
+      return list.map((app: any) => ({
+        ...app,
+        name: app.patient?.name || 'Paciente não identificado',
+        phone: app.patient?.phone || '',
+      }));
+    },
+    staleTime: 1000 * 5,
   });
+
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: AppointmentStatus }) => {
@@ -45,20 +51,20 @@ export function useAppointments(page = 1) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
-      toast.success('Status atualizado!');
+      toast.success('Status atualizado com sucesso!');
     },
     onError: (err: any) => {
-      toast.error(err.response?.data?.message || 'Erro ao atualizar status');
+      toast.error(err.response?.data?.message || 'Erro ao transicionar status');
     }
   });
 
+  
   const createAppointmentMutation = useMutation({
-    mutationFn: async (data: CreateAppointmentDTO) => {
+    mutationFn: async (data: any) => {
       const patientResponse = await api.post('/patients', {
         name: data.name,
         phone: data.phone
       });
-
       return api.post('/appointments', {
         patientId: patientResponse.data.id,
         description: data.description
@@ -66,10 +72,36 @@ export function useAppointments(page = 1) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
-      toast.success('Agendamento realizado!');
+      toast.success('Agendamento registrado na fila!');
     },
     onError: (err: any) => {
       toast.error(err.response?.data?.message || 'Erro ao criar agendamento');
+    }
+  });
+
+  const deleteAppointmentMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await api.delete(`/appointments/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      toast.success('Atendimento removido com sucesso!');
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.message || 'Não foi possível excluir o atendimento');
+    }
+  });
+
+  const updateAppointmentMutation = useMutation({
+    mutationFn: async ({ id, description }: { id: string; description: string }) => {
+      await api.put(`/appointments/${id}`, { description });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      toast.success('Informações atualizadas!');
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.message || 'Erro ao editar atendimento');
     }
   });
 
@@ -77,7 +109,10 @@ export function useAppointments(page = 1) {
     appointments, 
     isLoading, 
     updateStatus: updateStatusMutation.mutate,
-    createAppointment: createAppointmentMutation.mutateAsync,
-    isCreating: createAppointmentMutation.isPending
+    createAppointment: createAppointmentMutation.mutateAsync, 
+    deleteAppointment: deleteAppointmentMutation.mutate,
+    updateAppointment: updateAppointmentMutation.mutate,
+    isCreating: createAppointmentMutation.isPending,
+    isUpdatingStatus: updateStatusMutation.isPending
   };
 }

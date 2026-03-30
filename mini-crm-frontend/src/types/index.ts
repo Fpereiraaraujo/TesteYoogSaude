@@ -5,12 +5,15 @@ export interface Patient {
   name: string;
   phone: string;
 }
+
 export interface Appointment {
   id: string;
   description: string;
-  status: 'WAITING' | 'IN_PROGRESS' | 'FINISHED';
-  patient: {
+  status: AppointmentStatus; 
+  patient?: {
     name: string;
     phone: string;
   };
+  name?: string;  
+  phone?: string; 
 }
